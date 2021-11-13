@@ -8,13 +8,13 @@ import os #引用文件操作库
 import re
 import json
 
-def search_url():
+def search_url(n):
     API_url="https://api.coolapk.com/v6/picture/list?"
     #url="https://api.coolapk.com/v6/picture/list?type=recommend&tag=%E9%A3%8E%E6%99%AF&page=1"
     #url类型recommend为推荐，hot为热门，newest为最新的
     type="newest"
     # 为内容页数,每一页在10-15个用户上传
-    page=1
+    page=n
     # 为照片的标签
     """
     常见标签：
@@ -25,7 +25,7 @@ def search_url():
     """
     tag="小清新"
     picture_url=API_url+"&type="+type+"&page="+str(page)+"&tag="+tag
-    print(picture_url)
+    #print(picture_url)
     header = {
         "Accept": "*/*",
         "Accept-Encoding": "br;q=1.0, gzip;q=0.9, deflate;q=0.8",
@@ -57,12 +57,34 @@ def search_url():
     """
 
     datas=json.loads(json_content)["data"]
+
+
+    #对文件进行保存在“酷安图片"的文件夹内
+    img_title="酷安图片"
+    path=r"D://"
+    if not os.path.exists("D://酷安图片"):
+        print('创建文件夹:{}'.format(img_title))
+        os.mkdir(path+img_title)
+    #对图片进行遍历
     for data in datas:
         chinese=re.compile('[\u4e00-\u9fa5]+')  #使用汉字编码特征截取汉字部分
         messages=str(data["message"])
         message=chinese.findall(messages)
-        print(message)
-        print(data["picArr"])
+        #print(message)
+        photos=data["picArr"]
+        for photo in photos:
+            #print(photo)
+            pic_link=photo
 
+            filename = pic_link.split("/")[-1]
+            print(filename+"正在保存.......")
+            time.sleep(0.05)
+            with open("D://酷安图片//"+filename, 'wb') as f:
+                f.write(requests.get(pic_link).content)
 if __name__=="__main__":
-    content_url=search_url()
+    try:
+        for i in range(10000):
+            content_url=search_url(i)
+    except:
+        print("可能保存文件的范围过大了")
+    print("10000个数据文件保存完成")
