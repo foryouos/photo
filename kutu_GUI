@@ -1,26 +1,39 @@
-import io
+import os
 from PIL import Image, ImageTk
 import tkinter as tk
 import requests
 import pymysql
+import random
+#文件存储库
+import shutil
+import re
 def update_photo():
     # 对数据进行返回
 
-    cursor.execute("select * from photo_url_girl;")
+    cursor.execute("select * from photo_url;")
 
     data = cursor.fetchall()
     # print(data[0][3])
-    global i
-    # 实现每循环一次，更换一次URL，并保存图存为back.png
-    #while 1:  # 布尔值为1，一直持续的循环
 
+    #
+    cursor.execute("select count(p_id) from photo_url;")
+    sum = int(cursor.fetchone()[0])
+
+
+    #print(sum)
+    # 实现每循环一次，更换一次URL，并保存图存为back.png
+    #将i设置为随机数
+
+    #最大数应该设置为数据库的最大数
+    i=random.randint(0,sum-1)
+    #print(i)
     url = data[i][3]
     #print(url)
     photo = requests.get(url=url, headers=header).content
     with open("./back.png", "wb") as f:
         f.write(photo)
     ##print("图片保存成功")
-    i = i + 1
+
 
 def resize(w, h, w_box, h_box, pil_image):
     '''
@@ -39,7 +52,7 @@ def resize(w, h, w_box, h_box, pil_image):
 
 def view():
     #调用保存图片函数
-    root.update()
+
     update_photo()
 
     # 期望图像显示的大小
@@ -67,11 +80,42 @@ def view():
     # put the image on a widget the size of the specified display box
     # Label: 这个小工具，就是个显示框，小窗口，把图像大小显示到指定的显示框
     #print("被调用")
-    label = tk.Label(root, image=tk_image, width=w_box, height=h_box,bg="yellow",textvariable=True)
+    label = tk.Label(root, image=tk_image, width=w_box, height=h_box,bg="white",textvariable=True)
     # padx,pady是图像与窗口边缘的距离
     label.pack(padx=2, pady=2)
     label.place(width=w_box, height=h_box)
     root.mainloop()
+def save_photo_desktop():
+    path = r"C:\Users\YuHeShui\Desktop"
+    global name
+
+    if not os.path.exists(r"C:\Users\YuHeShui\Desktop\酷图图片"):
+        #print('创建文件夹:{}'.format(img_title))
+        os.mkdir(path + "./酷图图片")
+    #上接原有图片，避免恶意覆盖
+    if not os.path.exists(r"C:\Users\YuHeShui\Desktop\酷图图片\1.png"):
+        #print('创建文件夹:{}'.format(img_title))
+        shutil.copy(r"C:\Users\YuHeShui\PycharmProjects\pythonProject2\酷图\back.png",
+                    r"C:\Users\YuHeShui\Desktop\酷图图片\\" + str(name) + ".png")
+
+        name = name + 1
+    else:
+        name_list = os.listdir(r"C:\Users\YuHeShui\Desktop\酷图图片")
+        name_list.sort(key=lambda x: int(x[:-4]))
+
+        max_number = name_list[-1]
+
+        max_number = str(max_number)
+        # 使用正则表达式切去数字部分
+        number = re.compile(r"^[0-9]*")
+        num = re.findall(number, max_number)[0]
+
+        name=int(num)+1
+        shutil.copy(r"C:\Users\YuHeShui\PycharmProjects\pythonProject2\酷图\back.png",
+                    r"C:\Users\YuHeShui\Desktop\酷图图片\\" + str(name) + ".png")
+        name = name + 1
+
+
 
 if __name__=="__main__":
     #连接数据库
@@ -86,32 +130,40 @@ if __name__=="__main__":
     )
     cursor = db.cursor()
     print("连接数据成功")
+    #定义图片名称，全局变量
+    name=1
+    #调用UI模块
+
+    # 设置UI部分
     root = tk.Tk()
-    root.title("酷安图片")
-    #设置初始窗口大小
-    root.geometry("380x790")
-    #设置窗口图表
-    root.iconbitmap()
+    # 空格尝试使其居中
+    root.title("                        酷安图片")
 
+    # 设置初始窗口大小,加数为初始位于桌面的位置x轴+y轴
+    root.geometry("380x790+1050+30")
+    # 设置窗口图表
+    root.iconbitmap("./yuzou.ico")
+    # 调用菜单，关于作者模块
 
-    #调整按钮位置
-    frame=tk.Frame(root)
-    #使按钮的位置处于底部中间的位置
-    frame.pack(side=tk.BOTTOM)
+    # 调整按钮位置
+    frame = tk.Frame(root)
+    # 使按钮的位置处于底部中间的位置,pady设置稍微靠上的位置
+    frame.pack(side=tk.BOTTOM, pady=5, padx=10)
     # size of image display box you want
-    #调用图片调整函数
-    i=1
-    next=tk.Button(frame,text="下一张",fg="black",command=view)
-    #next.place(x=10,y=10,width=100,height=100)
+    # 调用图片调整函数
+    i = 1
+    next = tk.Button(frame, text="下一张", fg="black", command=view, cursor="pencil", activebackground="yellow")
+    # next.place(x=10,y=10,width=100,height=100)
+    next.pack(side=tk.LEFT)
 
-    next.pack(side=tk.BOTTOM)
-    #首张图片呈现
+    save = tk.Button(frame, text="保存", fg="black", command=save_photo_desktop, padx="10", cursor='star',
+                     activebackground="red")
+    save.pack(side=tk.RIGHT, padx="15")
+    # 首张图片呈现
+    print("软件成功开启，并正在运行........")
     view()
 
+    print("软件成功关闭，再见")
+    # 设置事件循环
     root.mainloop()
 
-
-"""
-参考文献:python界面上的图片缩放，根据窗口大小
-https://blog.csdn.net/sinat_27382047/article/details/80138733
-"""
