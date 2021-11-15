@@ -1,0 +1,117 @@
+import io
+from PIL import Image, ImageTk
+import tkinter as tk
+import requests
+import pymysql
+def update_photo():
+    # 对数据进行返回
+
+    cursor.execute("select * from photo_url_girl;")
+
+    data = cursor.fetchall()
+    # print(data[0][3])
+    global i
+    # 实现每循环一次，更换一次URL，并保存图存为back.png
+    #while 1:  # 布尔值为1，一直持续的循环
+
+    url = data[i][3]
+    #print(url)
+    photo = requests.get(url=url, headers=header).content
+    with open("./back.png", "wb") as f:
+        f.write(photo)
+    ##print("图片保存成功")
+    i = i + 1
+
+def resize(w, h, w_box, h_box, pil_image):
+    '''
+    resize a pil_image object so it will fit into
+    a box of size w_box times h_box, but retain aspect ratio
+    对一个pil_image对象进行缩放，让它在一个矩形框内，还能保持比例
+    '''
+    f1 = 1.0 * w_box / w  # 1.0 forces float division in Python2
+    f2 = 1.0 * h_box / h
+    factor = min([f1, f2])
+    # print(f1, f2, factor) # test
+    # use best down-sizing filter
+    width = int(w * factor)
+    height = int(h * factor)
+    return pil_image.resize((width, height), Image.ANTIALIAS)
+
+def view():
+    #调用保存图片函数
+    root.update()
+    update_photo()
+
+    # 期望图像显示的大小
+    w_box = 380
+    h_box = 750
+
+    # open as a PIL image object
+    # 以一个PIL图像对象打开
+    pil_image = Image.open(r'./back.png')
+
+    # get the size of the image
+    # 获取图像的原始大小
+    w, h = pil_image.size
+
+    # resize the image so it retains its aspect ration
+    # but fits into the specified display box
+    # 缩放图像让它保持比例，同时限制在一个矩形框范围内
+    #根据设定的图像尺寸，调整图片大小，使其适应文件夹
+    pil_image_resized = resize(w, h, w_box, h_box, pil_image)
+
+    # convert PIL image object to Tkinter PhotoImage object
+    # 把PIL图像对象转变为Tkinter的PhotoImage对象
+    tk_image = ImageTk.PhotoImage(pil_image_resized)
+
+    # put the image on a widget the size of the specified display box
+    # Label: 这个小工具，就是个显示框，小窗口，把图像大小显示到指定的显示框
+    #print("被调用")
+    label = tk.Label(root, image=tk_image, width=w_box, height=h_box,bg="yellow",textvariable=True)
+    # padx,pady是图像与窗口边缘的距离
+    label.pack(padx=2, pady=2)
+    label.place(width=w_box, height=h_box)
+    root.mainloop()
+
+if __name__=="__main__":
+    #连接数据库
+    header = {
+        "User-Agent": "Mozilla/5.0 (iPad Air (4th generation); CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1 (#Build; Apple; iPad Air (4th generation); iOS15.1; 15.1) +iCoolMarket/4.4.4"
+    }
+    db = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="5211314",
+        database="kuanphoto"
+    )
+    cursor = db.cursor()
+    print("连接数据成功")
+    root = tk.Tk()
+    root.title("酷安图片")
+    #设置初始窗口大小
+    root.geometry("380x790")
+    #设置窗口图表
+    root.iconbitmap()
+
+
+    #调整按钮位置
+    frame=tk.Frame(root)
+    #使按钮的位置处于底部中间的位置
+    frame.pack(side=tk.BOTTOM)
+    # size of image display box you want
+    #调用图片调整函数
+    i=1
+    next=tk.Button(frame,text="下一张",fg="black",command=view)
+    #next.place(x=10,y=10,width=100,height=100)
+
+    next.pack(side=tk.BOTTOM)
+    #首张图片呈现
+    view()
+
+    root.mainloop()
+
+
+"""
+参考文献:python界面上的图片缩放，根据窗口大小
+https://blog.csdn.net/sinat_27382047/article/details/80138733
+"""
